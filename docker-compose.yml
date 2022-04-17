@@ -1,0 +1,45 @@
+version: '3'
+
+networks:
+  bridge:
+  db-net:
+    internal: true
+
+volumes:
+  db-data:
+    driver: local
+
+services:
+  db:
+    container_name: odoo-db
+    image: postgres:11
+    restart: always
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - db-net
+    environment:
+      POSTGRES_USER: $DB_USER
+      POSTGRES_PASSWORD: $DB_PASSWORD
+      POSTGRES_DB: postgres
+
+  odoo13:
+    container_name: odoo-web
+    image: odoo:15
+    restart: always
+    depends_on:
+      - db
+    ports:
+      - 8080:8069
+    volumes:
+      - ./addons:/mnt/extra-addons
+      - ./etc:/etc/odoo
+    networks:
+      - bridge
+      - db-net
+    environment:
+      HOST: db
+      USER: $DB_USER
+      PASSWORD: $DB_PASSWORD
+    tty: true
+    command: -- --proxy-mode --dev=reload
